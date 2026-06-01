@@ -1,0 +1,12 @@
+*node_modules/
+*.zip
+*.log
+*.env
+dist/
+build/
+coverage/
+.DS_Store
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace 

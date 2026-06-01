@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { protect, requireWorkspaceRole } from "../middlewares/auth.middleware.js";
+import { overview, monthlyProfit, expenseBreakdown, clientRanking } from "../controllers/analytics.controller.js";
+const router = Router();
+router.use(protect, requireWorkspaceRole());
+router.get("/overview", overview);
+router.get("/monthly-profit", monthlyProfit);
+router.get("/expense-breakdown", expenseBreakdown);
+router.get("/client-ranking", clientRanking);
+export default router;
