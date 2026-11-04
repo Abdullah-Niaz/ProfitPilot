@@ -1,8 +1,6 @@
-import dotenv from "dotenv";
-
-dotenv.config();
-console.log("Current directory:", process.cwd());
-console.log("MONGO_URI:", process.env.MONGO_URI);
+import "dotenv/config";
+import { assertSeedAllowed } from "./guard.js";
+import AuthSession from "../models/AuthSession.js";
 import mongoose from "mongoose";
 import { connectDB } from "../config/db.js";
 import User from "../models/User.js";
@@ -13,10 +11,10 @@ import Project from "../models/Project.js";
 import Revenue from "../models/Revenue.js";
 import Expense from "../models/Expense.js";
 
+assertSeedAllowed(process.env);
 await connectDB();
-console.log("Current directory:", process.cwd());
-console.log("MONGO_URI:", process.env.MONGO_URI);
 await Promise.all([
+  AuthSession.deleteMany(),
   User.deleteMany(),
   Workspace.deleteMany(),
   WorkspaceMember.deleteMany(),
@@ -29,7 +27,7 @@ await Promise.all([
 const user = await User.create({
   name: "Agency Owner",
   email: "owner@agencycrm.com",
-  password: "Password123!",
+  password: process.env.DEMO_PASSWORD,
   isEmailVerified: true,
 });
 const workspace = await Workspace.create({
@@ -185,5 +183,5 @@ await Expense.insertMany([
   },
 ]);
 
-console.log("Seed complete. Demo login: owner@agencycrm.com / Password123!");
+console.log("Seed complete. Use the demo email and the password you supplied.");
 await mongoose.disconnect();

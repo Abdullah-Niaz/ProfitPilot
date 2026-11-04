@@ -1,9 +1,10 @@
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { Router } from "express";
 import { protect, requireWorkspaceRole } from "../middlewares/auth.middleware.js";
 import { clientRecommendation, healthReport, retainDropSuggestions } from "../controllers/ai.controller.js";
 const router = Router();
-router.use(protect, requireWorkspaceRole("Owner", "Admin", "Manager", "Accountant"));
-router.get("/agency-health-report", healthReport);
-router.get("/retain-drop-suggestions", retainDropSuggestions);
-router.post("/client-recommendation/:clientId", clientRecommendation);
+router.use(asyncHandler(protect), asyncHandler(requireWorkspaceRole("Owner", "Admin", "Manager", "Accountant")));
+router.get("/agency-health-report", asyncHandler(healthReport));
+router.get("/retain-drop-suggestions", asyncHandler(retainDropSuggestions));
+router.post("/client-recommendation/:clientId", asyncHandler(clientRecommendation));
 export default router;

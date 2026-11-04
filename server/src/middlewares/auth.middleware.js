@@ -1,26 +1,29 @@
-import { verifyAccessToken } from "../utils/tokens.js";
-import { AppError } from "../utils/AppError.js";
-import User from "../models/User.js";
-import WorkspaceMember from "../models/WorkspaceMember.js";
+import { verifyAccessToken } from '../utils/tokens.js';
+import { AppError } from '../utils/AppError.js';
+import User from '../models/User.js';
+import WorkspaceMember from '../models/WorkspaceMember.js';
+import AuthSession from '../models/AuthSession.js';
+import { objectId } from '../validation/schemas.js';
 
-export const protect = async (req, res, next) => {
+export async function protect(req, res, next) {
   const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) return next(new AppError("Unauthorized", 401));
-
-  const token = header.split(" ")[1];
-  const decoded = verifyAccessToken(token);
-  const user = await User.findById(decoded.userId).select("-password -refreshToken");
-  if (!user) return next(new AppError("User not found", 401));
-
+  if (!header?.startsWith('Bearer ')) throw new AppError('Unauthorized', 401);
+  const decoded = verifyAccessToken(header.slice(7));
+  if (![decoded.userId, decoded.sid, decoded.workspaceId].every(value => objectId.safeParse(value).success)) throw new AppError('Sign in again', 401);
+  const session = await AuthSession.findOne({_id:decoded.sid, user:decoded.userId, workspace:decoded.workspaceId, revokedAt:null, expiresAt:{$gt:new Date()}});
+  if (!session) throw new AppError('Session expired or revoked', 401);
+  const user = await User.findById(decoded.userId).select('name email isEmailVerified');
+  if (!user) throw new AppError('Unauthorized', 401);
+  const workspaceId = objectId.parse(req.headers['x-workspace-id'] || decoded.workspaceId);
+  const member = await WorkspaceMember.findOne({workspace:workspaceId, user:user._id, status:'active'});
+  if (!member) throw new AppError('Workspace access denied', 403);
   req.user = user;
-  req.workspaceId = req.headers["x-workspace-id"] || decoded.workspaceId;
+  req.workspaceId = workspaceId;
+  req.memberRole = member.role;
+  req.sessionId = session._id;
   next();
-};
-
-export const requireWorkspaceRole = (...roles) => async (req, res, next) => {
-  const membership = await WorkspaceMember.findOne({ workspace: req.workspaceId, user: req.user._id, status: "active" });
-  if (!membership) return next(new AppError("Workspace access denied", 403));
-  req.memberRole = membership.role;
-  if (roles.length && !roles.includes(membership.role)) return next(new AppError("Insufficient permissions", 403));
+}
+export const requireWorkspaceRole = (...roles) => (req, res, next) => {
+  if (!req.memberRole || (roles.length && !roles.includes(req.memberRole))) throw new AppError('Insufficient permissions', 403);
   next();
 };

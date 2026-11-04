@@ -1,5 +1,7 @@
 # Financial CRM for Agencies
 
+> Phase 1 (API & session hardening), Phase 2 (financial correctness & audit engine), and Phase 3 (usable MVP & navigation redesign) are implemented. See the [Phase 1 guide](docs/PHASE1.md), [Phase 2 guide](docs/PHASE2.md), and [Phase 3 guide](docs/PHASE3.md). Release preparation and CI/deployment checks are the next phase (Phase 4).
+
 A modern SaaS platform designed for agencies, consulting firms, freelancers, and service-based businesses to manage clients, projects, revenue, expenses, and profitability from a single workspace.
 
 Unlike traditional CRMs that focus primarily on client management, Financial CRM for Agencies combines operational and financial data to help businesses understand which clients and projects generate the highest value and which ones negatively impact profitability.
@@ -154,15 +156,15 @@ The backend follows a layered architecture to improve maintainability and scalab
 
 ```text
 Routes
-  ↓
+  Ã¢â€ â€œ
 Middlewares
-  ↓
+  Ã¢â€ â€œ
 Controllers
-  ↓
+  Ã¢â€ â€œ
 Services
-  ↓
+  Ã¢â€ â€œ
 Repositories
-  ↓
+  Ã¢â€ â€œ
 Models
 ```
 
@@ -236,7 +238,7 @@ Client Profit = Revenue - Expenses
 ### Profit Margin
 
 ```text
-Profit Margin = (Profit / Revenue) × 100
+Profit Margin = (Profit / Revenue) Ãƒâ€” 100
 ```
 
 ### Project Profitability
@@ -410,3 +412,13 @@ This project demonstrates:
 **Abdullah Niaz**
 
 Software Engineer focused on building scalable web applications, SaaS products, and data-driven business systems.
+
+
+### Financial reliability and database setup
+
+Financial writes require a MongoDB replica set (or Atlas/sharded deployment). See [Phase 2 reliability fixes](docs/PHASE2-HARDENING.md) for setup requirements, verification, retry behavior, and remaining work.
+
+
+### Demo and operations
+
+See [demo login, email setup, backups, CI and release checks](docs/OPERATIONS.md) for the latest Phase 3/4 implementation.

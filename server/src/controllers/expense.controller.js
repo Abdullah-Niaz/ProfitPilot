@@ -1,33 +1,40 @@
-import { sendSuccess } from "../utils/apiResponse.js";
-import { AppError } from "../utils/AppError.js";
-import Expense from "../models/Expense.js";
+import Model from '../models/Expense.js';
+import { expenseSchema, reversalSchema, objectId } from '../validation/schemas.js';
+import { resourceController } from './resource.controller.js';
+import { sendSuccess } from '../utils/apiResponse.js';
+import { AppError } from '../utils/AppError.js';
+import { logAuditEvent } from '../services/audit.service.js';
 
-export const create = async (req, res) => {
-  const doc = await Expense.create({ ...req.body, workspace: req.workspaceId });
-  sendSuccess(res, doc, "Expense created", 201);
-};
+const baseController = resourceController(Model, expenseSchema, 'Expense', {hasClient:true});
 
-export const list = async (req, res) => {
-  const query = { workspace: req.workspaceId };
-  if (req.query.status) query.status = req.query.status;
-  const docs = await Expense.find(query).sort({ createdAt: -1 }).limit(100).populate("client", "name industry status");
-  sendSuccess(res, docs, "Expense list");
-};
+export const { create, list, getById, update, remove } = baseController;
 
-export const getById = async (req, res, next) => {
-  const doc = await Expense.findOne({ _id: req.params.id, workspace: req.workspaceId }).populate("client", "name industry status");
-  if (!doc) return next(new AppError("Expense not found", 404));
-  sendSuccess(res, doc, "Expense loaded");
-};
+export async function reverse(req, res) {
+  const { reason } = reversalSchema.parse(req.body);
+  const id = objectId.parse(req.params.id);
+  const expense = await Model.findOne({ _id: id, workspace: req.workspaceId });
+  if (!expense) throw new AppError('Expense not found', 404);
+  if (expense.status === 'Reversed') throw new AppError('Expense is already reversed', 409);
 
-export const update = async (req, res, next) => {
-  const doc = await Expense.findOneAndUpdate({ _id: req.params.id, workspace: req.workspaceId }, req.body, { new: true });
-  if (!doc) return next(new AppError("Expense not found", 404));
-  sendSuccess(res, doc, "Expense updated");
-};
+  expense.status = 'Reversed';
+  expense.reversedAt = new Date();
+  expense.reversedBy = req.user._id;
+  expense.reversalReason = reason;
+  await expense.save();
 
-export const remove = async (req, res, next) => {
-  const doc = await Expense.findOneAndDelete({ _id: req.params.id, workspace: req.workspaceId });
-  if (!doc) return next(new AppError("Expense not found", 404));
-  sendSuccess(res, null, "Expense deleted");
-};
+  await logAuditEvent({
+    workspace: req.workspaceId,
+    actor: req.user._id,
+    action: 'REVERSE_EXPENSE',
+    entity: 'Expense',
+    entityId: expense._id,
+    metadata: {
+      amountInCents: expense.amountInCents,
+      amount: expense.amount,
+      currency: expense.currency,
+      reason
+    }
+  });
+
+  sendSuccess(res, expense, 'Expense reversed');
+}

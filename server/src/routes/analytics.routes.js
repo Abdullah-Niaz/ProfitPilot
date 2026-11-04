@@ -1,10 +1,11 @@
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { Router } from "express";
 import { protect, requireWorkspaceRole } from "../middlewares/auth.middleware.js";
 import { overview, monthlyProfit, expenseBreakdown, clientRanking } from "../controllers/analytics.controller.js";
 const router = Router();
-router.use(protect, requireWorkspaceRole());
-router.get("/overview", overview);
-router.get("/monthly-profit", monthlyProfit);
-router.get("/expense-breakdown", expenseBreakdown);
-router.get("/client-ranking", clientRanking);
+router.use(asyncHandler(protect), asyncHandler(requireWorkspaceRole()));
+router.get("/overview", asyncHandler(overview));
+router.get("/monthly-profit", asyncHandler(monthlyProfit));
+router.get("/expense-breakdown", asyncHandler(expenseBreakdown));
+router.get("/client-ranking", asyncHandler(clientRanking));
 export default router;

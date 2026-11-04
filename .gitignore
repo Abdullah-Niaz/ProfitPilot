@@ -10,4 +10,14 @@ coverage/
 .idea/
 .vscode/
 *.sublime-project
-*.sublime-workspace 
+*.sublime-workspace
+# Keep local secret variants out of Git; templates remain shareable.
+.env.*
+!.env.example
+
+.local/
+backups/
+.demo-login.txt
+
+# No root npm package; keep the accidental empty root lockfile local.
+/package-lock.json

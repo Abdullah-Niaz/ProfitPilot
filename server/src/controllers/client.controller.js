@@ -1,35 +1,13 @@
-import { sendSuccess } from "../utils/apiResponse.js";
-import { AppError } from "../utils/AppError.js";
-import Client from "../models/Client.js";
+import Model from '../models/Client.js';
+import { clientSchema } from '../validation/schemas.js';
+import { resourceController } from './resource.controller.js';
+export const {create, list, getById, update, remove} = resourceController(Model, clientSchema, 'Client', {hasClient:false});
 import { getClientProfitability } from '../services/profitability.service.js';
-
-export const create = async (req, res) => {
-  const doc = await Client.create({ ...req.body, workspace: req.workspaceId });
-  sendSuccess(res, doc, "Client created", 201);
+import { sendSuccess } from '../utils/apiResponse.js';
+import { AppError } from '../utils/AppError.js';
+import { objectId } from '../validation/schemas.js';
+export const profitability = async (req,res) => {
+  const id=objectId.parse(req.params.id);
+  if(!await Model.exists({_id:id,workspace:req.workspaceId})) throw new AppError('Client not found',404);
+  sendSuccess(res,await getClientProfitability(req.workspaceId,id),'Client profitability');
 };
-
-export const list = async (req, res) => {
-  const query = { workspace: req.workspaceId };
-  if (req.query.status) query.status = req.query.status;
-  const docs = await Client.find(query).sort({ createdAt: -1 }).limit(100).populate("client", "name industry status");
-  sendSuccess(res, docs, "Client list");
-};
-
-export const getById = async (req, res, next) => {
-  const doc = await Client.findOne({ _id: req.params.id, workspace: req.workspaceId }).populate("client", "name industry status");
-  if (!doc) return next(new AppError("Client not found", 404));
-  sendSuccess(res, doc, "Client loaded");
-};
-
-export const update = async (req, res, next) => {
-  const doc = await Client.findOneAndUpdate({ _id: req.params.id, workspace: req.workspaceId }, req.body, { new: true });
-  if (!doc) return next(new AppError("Client not found", 404));
-  sendSuccess(res, doc, "Client updated");
-};
-
-export const remove = async (req, res, next) => {
-  const doc = await Client.findOneAndDelete({ _id: req.params.id, workspace: req.workspaceId });
-  if (!doc) return next(new AppError("Client not found", 404));
-  sendSuccess(res, null, "Client deleted");
-};
-export const profitability = async (req, res) => sendSuccess(res, await getClientProfitability(req.workspaceId, req.params.id), 'Client profitability');

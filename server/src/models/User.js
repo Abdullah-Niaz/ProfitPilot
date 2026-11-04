@@ -6,8 +6,11 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, index: true },
   password: { type: String, required: true, minlength: 8 },
   avatar: String,
+  invitationOnly: {type:Boolean,default:false},
   isEmailVerified: { type: Boolean, default: false },
   refreshToken: String,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
   lastLogin: Date
 }, { timestamps: true });
 
